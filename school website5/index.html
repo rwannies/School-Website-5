@@ -1,0 +1,761 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Despatch Preparatory School</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            overflow-x: hidden;
+            background: #f9fafb;
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #2E5A88;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: opacity 0.2s ease;
+        }
+
+        .loader {
+            border: 8px solid #4CAF50;
+            border-top: 8px solid #A3CFFA;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Navigation Bar */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: linear-gradient(135deg, #2E5A88, #4274A1);
+            color: white;
+            padding: 15px 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        nav.scrolled {
+            background: linear-gradient(135deg, #1F4066, #305C7F);
+            padding: 12px 0;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 25px;
+        }
+
+        .logo img {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 20px;
+            font-size: 1em;
+            font-family: 'Open Sans', sans-serif;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: #4CAF50;
+            transition: width 0.2s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-links a:hover {
+            color: #4CAF50;
+            transform: translateY(-2px);
+        }
+
+        .hamburger {
+            display: none;
+            font-size: 1.8em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .hamburger:hover {
+            transform: rotate(45deg);
+        }
+
+        /* Full-Screen Sections */
+        section {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 30px 15px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hero Image and Gradient Overlay */
+        .hero-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 120%;
+            object-fit: cover;
+            opacity: 0.45;
+            z-index: -1;
+            transition: transform 0.3s ease;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5));
+            z-index: -1;
+        }
+
+        /* Wave Animation */
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1440 100" xmlns="http://www.w3.org/2000/svg"><path fill="rgba(255,255,255,0.2)" d="M0,32L48,37.3C96,43,192,53,288,58.7C384,64,480,64,576,53.3C672,43,768,21,864,26.7C960,32,1056,64,1152,69.3C1248,75,1344,53,1392,42.7L1440,32L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path></svg>');
+            background-size: cover;
+            animation: wave 10s linear infinite;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-1440px); }
+        }
+
+        /* Section Backgrounds */
+        #home { background: linear-gradient(135deg, #2E5A88, #4274A1); }
+        #about { background: linear-gradient(135deg, #4CAF50, #66BB6A); }
+        #academics { background: linear-gradient(135deg, #2E5A88, #A3CFFA); }
+        #activities { background: linear-gradient(135deg, #4CAF50, #81C784); }
+        #contact { background: linear-gradient(135deg, #2E5A88, #5B89B3); }
+
+        /* Section Content */
+        .section-content {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section-content.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-content h1, .section-content .paragraph-container, .section-content .cta-button {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .section-content.visible h1 {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 0.1s;
+        }
+
+        .section-content.visible .paragraph-container {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 0.3s;
+        }
+
+        .section-content.visible .cta-button {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: 0.5s;
+        }
+
+        h1 {
+            font-size: 3.2em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .paragraph-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        p {
+            font-size: 1.1em;
+            max-width: 700px;
+            line-height: 1.7;
+            font-family: 'Open Sans', sans-serif;
+            margin-bottom: 25px;
+        }
+
+        .cta-button {
+            background: #4CAF50;
+            color: #fff;
+            padding: 12px 35px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1em;
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            margin-top: 40px;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.4s;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.1) translateY(-3px);
+            background: #3653b3;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom Explore Our Vision Button */
+        #home .cta-button {
+            background: #4CAF50;
+        }
+
+        #home .cta-button:hover {
+            background: #66BB6A;
+            transform: scale(1.1) translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom Connect With Us Button */
+        #activities .cta-button {
+            background: #2E5A88;
+            padding: 10px 30px;
+            border: 2px solid #A3CFFA;
+            border-radius: 30px;
+            font-size: 0.95em;
+            margin-top: 80px; /* Increased to lower the button further */
+        }
+
+        #activities .cta-button:hover {
+            background: #4274A1;
+            border-color: #4CAF50;
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Gallery in Activities Section */
+        .gallery {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1000px;
+            margin-bottom: 20px; /* Added to ensure space between gallery and button */
+        }
+
+        .gallery-item {
+            width: 200px;
+            height: 140px;
+            overflow: hidden;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.15);
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .lightbox img {
+            max-width: 85%;
+            max-height: 85%;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .lightbox.active img {
+            transform: scale(1);
+        }
+
+        .close-lightbox {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .close-lightbox:hover {
+            transform: scale(1.2);
+        }
+
+        /* Contact Form */
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .contact-form input, .contact-form textarea {
+            padding: 14px;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Open Sans', sans-serif;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2E5A88;
+            transition: border-color 0.3s ease;
+        }
+
+        .contact-form input:focus, .contact-form textarea:focus {
+            border-color: #A3CFFA;
+            outline: none;
+        }
+
+        .contact-form button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1em;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .contact-form button:hover {
+            background: #66BB6A;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            h1 {
+                font-size: 2.8em;
+            }
+
+            p {
+                font-size: 1em;
+            }
+
+            .gallery-item {
+                width: 180px;
+                height: 120px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2em;
+            }
+
+            p {
+                font-size: 0.9em;
+            }
+
+            .nav-container {
+                padding: 0 15px;
+            }
+
+            .logo img {
+                height: 40px;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background: linear-gradient(135deg, #1F4066, #305C7F);
+                flex-direction: column;
+                padding: 25px 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+            }
+
+            .nav-links.active {
+                display: flex;
+                transform: translateX(0);
+            }
+
+            .nav-links a {
+                margin: 12px 0;
+                font-size: 1.2em;
+            }
+
+            .gallery-item {
+                width: 150px;
+                height: 100px;
+            }
+
+            .cta-button {
+                padding: 10px 30px;
+                font-size: 0.9em;
+            }
+
+            #activities .cta-button {
+                padding: 8px 25px;
+                font-size: 0.85em;
+                margin-top: 60px; /* Adjusted for mobile */
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            p {
+                font-size: 0.85em;
+            }
+
+            .cta-button {
+                padding: 8px 25px;
+                font-size: 0.85em;
+            }
+
+            #activities .cta-button {
+                padding: 7px 20px;
+                font-size: 0.8em;
+                margin-top: 50px; /* Adjusted for smaller screens */
+            }
+
+            .gallery-item {
+                width: 130px;
+                height: 90px;
+            }
+
+            .logo img {
+                height: 35px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="preloader">
+        <div class="loader"></div>
+    </div>
+
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <img src="images/school-logo.png" alt="Despatch Preparatory School Logo">
+            </div>
+            <div class="hamburger">☰</div>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <a href="#academics">Academics</a>
+                <a href="#activities">Activities</a>
+                <a href="#contact">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <section id="home">
+        <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f" alt="School Campus" class="hero-image">
+        <div class="hero-overlay"></div>
+        <div class="wave"></div>
+        <div class="section-content">
+            <h1>Despatch Preparatory School</h1>
+            <div class="paragraph-container">
+                <p>Join our vibrant community where young minds grow through creativity, knowledge, and support.</p>
+            </div>
+            <a href="#about" class="cta-button">Explore Our Vision</a>
+        </div>
+    </section>
+
+    <section id="about">
+        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644" alt="Students Learning" class="hero-image">
+        <div class="hero-overlay"></div>
+        <div class="wave"></div>
+        <div class="section-content">
+            <h1>About Us</h1>
+            <p>Since 1985, we’ve nurtured academic excellence and personal growth in a warm, inclusive environment.</p>
+            <a href="#academics" class="cta-button">Discover Academics</a>
+        </div>
+    </section>
+
+    <section id="academics">
+        <img src="https://images.unsplash.com/photo-1509062520-3a8c4c0b77a1" alt="Classroom" class="hero-image">
+        <div class="hero-overlay"></div>
+        <div class="wave"></div>
+        <div class="section-content">
+            <h1>Academics</h1>
+            <p>Our curriculum fosters critical thinking and innovation, preparing students for a bright future.</p>
+            <a href="#activities" class="cta-button">See Activities</a>
+        </div>
+    </section>
+
+    <section id="activities">
+        <img src="https://images.unsplash.com/photo-1547347298-4074fc3086f0" alt="Sports Activities" class="hero-image">
+        <div class="hero-overlay"></div>
+        <div class="wave"></div>
+        <div class="section-content">
+            <h1>Activities</h1>
+            <p>Explore sports, arts, and music programs designed to spark passion and build lifelong skills.</p>
+            <div class="gallery">
+                <div class="gallery-item" onclick="openLightbox('https://images.unsplash.com/photo-1543269865-0a740d43b90c')">
+                    <img src="https://images.unsplash.com/photo-1543269865-0a740d43b90c" alt="Activity 1">
+                </div>
+                <div class="gallery-item" onclick="openLightbox('https://images.unsplash.com/photo-1503676260728-1c00da094a0b')">
+                    <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b" alt="Activity 2">
+                </div>
+                <div class="gallery-item" onclick="openLightbox('https://images.unsplash.com/photo-1498243691581-b145c3f54a5a')">
+                    <img src="https://images.unsplash.com/photo-1498243691581-b145c3f54a5a" alt="Activity 3">
+                </div>
+            </div>
+            <a href="#contact" class="cta-button">Connect With Us</a>
+        </div>
+    </section>
+
+    <section id="contact">
+        <img src="https://images.unsplash.com/photo-1516321310766-66f1ce1c7a69" alt="School Community" class="hero-image">
+        <div class="hero-overlay"></div>
+        <div class="wave"></div>
+        <div class="section-content">
+            <h1>Contact Us</h1>
+            <p>Reach out with questions or to schedule a visit to our welcoming campus.</p>
+            <div class="contact-form">
+                <input type="text" placeholder="Your Name" required>
+                <input type="email" placeholder="Your Email" required>
+                <textarea placeholder="Your Message" rows="5" required></textarea>
+                <button type="button" onclick="alert('Message sent! We will get back to you soon.')">Send Message</button>
+            </div>
+        </div>
+    </section>
+
+    <div class="lightbox" id="lightbox">
+        <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
+        <img id="lightbox-img" src="" alt="Lightbox Image">
+    </div>
+
+    <script>
+        // Preloader
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            preloader.style.opacity = '0';
+            setTimeout(() => preloader.style.display = 'none', 600);
+        });
+
+        // Smooth Scroll for Navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+
+            // Parallax Effect
+            document.querySelectorAll('.hero-image').forEach(img => {
+                const speed = 0.3;
+                const offset = window.scrollY * speed;
+                img.style.transform = `translateY(${offset}px) scale(1.05)`;
+            });
+        });
+
+        // Scroll Reveal Animation
+        const sections = document.querySelectorAll('.section-content');
+        const options = {
+            threshold: 0.25
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, options);
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // Hamburger Menu
+        const hamburger = document.querySelector('.hamburger');
+        const navLinks = document.querySelector('.nav-links');
+
+        hamburger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        // Lightbox Functionality
+        function openLightbox(src) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            lightboxImg.src = src;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+        }
+    </script>
+</body>
+</html>
